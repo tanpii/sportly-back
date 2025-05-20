@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from app.schemas.user_schemas import UserResponse
+from app.schemas.base_schemas import UserResponse
 from app.schemas.workout_schemas import WorkoutWithCoach
 
 class CourseBase(BaseModel):

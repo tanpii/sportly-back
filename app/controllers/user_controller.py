@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.user import User
-from app.schemas.user_schemas import UserCreate, CoachList, TokenRequest, UserResponse
+from app.models.course import Course
+from app.schemas.user_schemas import UserCreate, CoachList, TokenRequest, UserResponse, CoachResponse
 from app.core.auth import get_password_hash, create_access_token, verify_password
 from fastapi import HTTPException, status, APIRouter, Depends
 from sqlalchemy.orm import joinedload
@@ -99,13 +100,13 @@ class UserController:
         coaches = result.scalars().all()
         return CoachList(coaches=coaches)
 
-    async def get_coach_with_workouts(self, coach_id: int) -> User:
+    async def get_coach_with_workouts(self, coach_id: int) -> CoachResponse:
         """Получение тренера с его тренировками и курсами"""
         result = await self.session.execute(
             select(User)
             .options(
                 joinedload(User.workouts),
-                joinedload(User.courses)
+                joinedload(User.courses).joinedload(Course.workouts)
             )
             .where(User.id == coach_id, User.is_coach == True)
         )
@@ -115,6 +116,11 @@ class UserController:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Тренер не найден"
             )
+        
+        # Отладочная информация
+        print(f"Coach workouts: {coach.workouts}")
+        print(f"Coach courses: {coach.courses}")
+        
         return coach
 
 # Роуты для пользователей
@@ -156,7 +162,7 @@ async def get_all_coaches(
     controller = UserController(db)
     return await controller.get_all_coaches()
 
-@coach_router.get("/{coach_id}", response_model=UserResponse)
+@coach_router.get("/{coach_id}", response_model=CoachResponse)
 async def get_coach_with_workouts(
     coach_id: int,
     db: AsyncSession = Depends(get_db)

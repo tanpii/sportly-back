@@ -81,6 +81,7 @@ class WorkoutController:
                 detail="Тренеры не могут записываться на тренировки"
             )
 
+        # Загружаем тренировку
         result = await self.session.execute(
             select(Workout).where(Workout.id == workout_id)
         )
@@ -90,6 +91,14 @@ class WorkoutController:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Тренировка не найдена"
             )
+
+        # Загружаем пользователя со всеми его тренировками
+        result = await self.session.execute(
+            select(User)
+            .options(joinedload(User.enrolled_workouts))
+            .where(User.id == user.id)
+        )
+        user = result.unique().scalars().first()
 
         if workout in user.enrolled_workouts:
             raise HTTPException(
@@ -110,6 +119,7 @@ class WorkoutController:
                 detail="Тренеры не могут отписываться от тренировок"
             )
 
+        # Загружаем тренировку
         result = await self.session.execute(
             select(Workout).where(Workout.id == workout_id)
         )
@@ -119,6 +129,14 @@ class WorkoutController:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Тренировка не найдена"
             )
+
+        # Загружаем пользователя со всеми его тренировками
+        result = await self.session.execute(
+            select(User)
+            .options(joinedload(User.enrolled_workouts))
+            .where(User.id == user.id)
+        )
+        user = result.unique().scalars().first()
 
         if workout not in user.enrolled_workouts:
             raise HTTPException(
@@ -152,6 +170,21 @@ class WorkoutController:
         workouts = result.unique().scalars().all()
         return WorkoutListWithEnrolledUsers(workouts=workouts)
 
+    async def get_workout(self, workout_id: int) -> Workout:
+        """Получение тренировки по ID"""
+        result = await self.session.execute(
+            select(Workout)
+            .options(joinedload(Workout.coach))
+            .where(Workout.id == workout_id)
+        )
+        workout = result.scalars().first()
+        if not workout:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Тренировка не найдена"
+            )
+        return workout
+
 # Роуты для всех тренировок
 @router.post("/", response_model=WorkoutResponse)
 async def create_workout(
@@ -176,6 +209,28 @@ async def get_workout(
 ):
     controller = WorkoutController(db)
     return await controller.get_workout(workout_id)
+
+@router.post("/{workout_id}/enroll")
+async def enroll_to_workout(
+    workout_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Запись на тренировку"""
+    controller = WorkoutController(db)
+    await controller.enroll_to_workout(workout_id, current_user)
+    return {"message": "Successfully enrolled to workout"}
+
+@router.post("/{workout_id}/unenroll")
+async def unenroll_from_workout(
+    workout_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Отмена записи на тренировку"""
+    controller = WorkoutController(db)
+    await controller.unenroll_from_workout(workout_id, current_user)
+    return {"message": "Successfully unenrolled from workout"}
 
 # Роуты для личных тренировок
 @my_router.get("/", response_model=WorkoutListWithEnrolledUsers)

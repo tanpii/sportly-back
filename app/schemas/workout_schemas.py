@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from app.schemas.user_schemas import UserResponse
+from app.schemas.base_schemas import UserResponse
 
 class WorkoutBase(BaseModel):
     title: str

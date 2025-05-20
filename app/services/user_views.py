@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
 from app.controllers.user_controller import UserController
-from app.schemas.user_schemas import UserCreate, UserResponse, Token, TokenRequest, CoachList, CoachCreate
+from app.schemas.user_schemas import UserCreate, UserResponse, Token, TokenRequest, CoachList, CoachCreate, CoachResponse
 from app.config.s3_config import upload_profile_photo
 from app.utils.auth import get_current_user, get_current_coach, get_password_hash, create_access_token
 from app.models.user import User
@@ -103,7 +103,7 @@ async def get_coaches(
     controller = UserController(db)
     return await controller.get_all_coaches()
 
-@coach_router.get("/{coach_id}", response_model=UserResponse)
+@coach_router.get("/{coach_id}", response_model=CoachResponse)
 async def get_coach(
     coach_id: int,
     db: AsyncSession = Depends(get_db)

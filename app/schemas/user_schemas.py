@@ -1,13 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
-
-class UserBase(BaseModel):
-    email: EmailStr
-    first_name: str
-    last_name: str
-    middle_name: Optional[str] = None
-    phone_number: Optional[str] = None
+from app.schemas.base_schemas import UserBase, UserResponse
+from app.schemas.workout_schemas import WorkoutWithCoach
+from app.schemas.course_schemas import CourseWithCoach
 
 class UserCreate(UserBase):
     password: str
@@ -17,12 +13,9 @@ class CoachCreate(UserCreate):
     experience_years: int
     profile_photo_url: Optional[str] = None
 
-class UserResponse(UserBase):
-    id: int
-    is_coach: bool
-    description: Optional[str] = None
-    experience_years: Optional[int] = None
-    profile_photo_url: Optional[str] = None
+class CoachResponse(UserResponse):
+    workouts: List[WorkoutWithCoach]
+    courses: List[CourseWithCoach]
 
     class Config:
         from_attributes = True
